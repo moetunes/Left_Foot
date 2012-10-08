@@ -121,7 +121,7 @@ typedef struct {
 } Commands;
 
 // Functions
-static void add_window(Window w, int tw);
+static void add_window(Window w, int tw, client *cl);
 static void buttonpress(XEvent *e);
 static void buttonrelease(XEvent *e);
 static void change_desktop(const Arg arg);
@@ -243,10 +243,11 @@ static Positional positional[20];
 #include "readkeysapps.c"
 
 /* ***************************** Window Management ******************************* */
-void add_window(Window w, int tw) {
+void add_window(Window w, int tw, client *cl) {
     client *c,*t, *dummy;
 
-    if(!(c = (client *)calloc(1,sizeof(client)))) {
+    if(cl != NULL) c = cl;
+    else if(!(c = (client *)calloc(1,sizeof(client)))) {
         logger("\033[0;31mError calloc!");
         exit(1);
     }
@@ -556,26 +557,25 @@ void client_to_desktop(const Arg arg) {
     if(arg.i == current_desktop || current == NULL ||arg.i >= DESKTOPS) return;
 
     client *tmp = current;
-    unsigned int tmp2 = current_desktop, j;
+    unsigned int tmp2 = current_desktop, j, cd = desktops[current_desktop].screen;
+
+    // Remove client from current desktop
+    //XUnmapWindow(dis,current->win);
+    remove_window(current->win, 1, 0);
 
     // Add client to desktop
     select_desktop(arg.i);
-    add_window(tmp->win, 0);
+    add_window(tmp->win, 0, tmp);
     save_desktop(arg.i);
-    select_desktop(tmp2);
 
-    // Remove client from current desktop
-    remove_window(current->win, 0, 0);
-
-    for(j=0;j<num_screens;++j) {
-        if(view[j].cd == arg.i) {
-            select_desktop(arg.i);
+    for(j=cd;j<cd+num_screens;++j) {
+        if(view[j%num_screens].cd == arg.i) {
             tile();
             XMapWindow(dis, current->win);
             update_current();
-            select_desktop(tmp2);
         }
     }
+    select_desktop(tmp2);
 
     if(STATUS_BAR == 0) update_bar();
 }
@@ -601,6 +601,8 @@ void select_desktop(int i) {
     current = desktops[i].current;
     transient = desktops[i].transient;
     current_desktop = i;
+    sw = desktops[current_desktop].w;
+    sh = desktops[current_desktop].h;
 }
 
 void more_master (const Arg arg) {
@@ -632,7 +634,7 @@ void tile() {
     // If only one window
     if(mode != 4 && head != NULL && head->next == NULL) {
         if(mode == 1) XMapWindow(dis, current->win);
-        XMoveResizeWindow(dis,head->win,0,y,sw+bdw,sh+bdw);
+        XMoveResizeWindow(dis,head->win,scrx,scry+y,sw+bdw,sh+bdw);
     } else {
         switch(mode) {
             case 0: /* Vertical */
@@ -940,7 +942,7 @@ void maprequest(XEvent *e) {
 
     Window trans = None;
     if (XGetTransientForHint(dis, ev->window, &trans) && trans != None) {
-        add_window(ev->window, 1); 
+        add_window(ev->window, 1, NULL); 
         if((attr.y + attr.height) > sh)
             XMoveResizeWindow(dis,ev->window,attr.x,y,attr.width,attr.height-10);
         XSetWindowBorderWidth(dis,ev->window,bdw);
@@ -969,7 +971,7 @@ void maprequest(XEvent *e) {
                 for(c=head;c;c=c->next)
                     if(ev->window == c->win)
                         ++j;
-                if(j < 1) add_window(ev->window, 0);
+                if(j < 1) add_window(ev->window, 0, NULL);
                 for(j=0;j<num_screens;++j) {
                     if(view[j].cd == convenience[i].preferredd-1) {
                         tile();
@@ -989,7 +991,7 @@ void maprequest(XEvent *e) {
     if(ch.res_class) XFree(ch.res_class);
     if(ch.res_name) XFree(ch.res_name);
 
-    add_window(ev->window, 0);
+    add_window(ev->window, 0, NULL);
     if(mode != 4) tile();
     if(mode != 1) XMapWindow(dis,ev->window);
     warp_pointer();
@@ -1302,7 +1304,7 @@ void init_desks() {
             else
                 desktops[j].h = info[i].height - bdw;
             //printf(" x=%d - y=%d - w=%d - h=%d \n", desktops[j].x, desktops[j].y, desktops[j].w, desktops[j].h);
-            desktops[j].master_size = master_size;
+            desktops[j].master_size = (mode == 2) ? (desktops[j].h*msize)/100 : (desktops[j].w*msize)/100;
             desktops[j].nmaster = 0;
             desktops[j].mode = mode;
             desktops[j].growth = 0;
@@ -1355,9 +1357,6 @@ void setup() {
     sprintf(APPS_FILE, "%s/.config/left_foot/apps.conf", getenv("HOME"));
     set_defaults();
     read_rcfile();
-
-    // Master size
-    master_size = (mode == 2) ? (sh*msize)/100 : (sw*msize)/100;
 
     // Set up all desktop
     init_desks();

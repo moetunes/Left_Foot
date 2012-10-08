@@ -245,7 +245,7 @@ void update_config() {
         }
     }
     for(i=0;i<DESKTOPS;++i) {
-        desktops[i].master_size = (desktops[i].mode == 2) ? (sh*msize)/100 : (sw*msize)/100;
+        desktops[i].master_size = (desktops[i].mode == 2) ? (desktops[i].h*msize)/100 : (desktops[i].w*msize)/100;
         if(desktops[i].head == NULL)
             desktops[i].mode = mode;
     }

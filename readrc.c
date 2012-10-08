@@ -201,7 +201,7 @@ void update_config() {
     XUngrabButton(dis, AnyButton, AnyModifier, root);
     if(font.fontset) XFreeFontSet(dis, font.fontset);
     read_rcfile();
-    y = (topbar == 0) ? 0 : sh+bdw;
+    y = (topbar == 0) ? 0 : desktops[0].h+bdw;
     if(DESKTOPS < old_desktops) {
         save_desktop(current_desktop);
         Arg a = {.i = DESKTOPS-1};
@@ -234,7 +234,7 @@ void update_config() {
             }
             XSetWindowBorder(dis,sb_area,theme[3].barcolor);
             XSetWindowBackground(dis, sb_area, theme[1].barcolor);
-            XMoveResizeWindow(dis, sb_area, sb_desks, y, sw-(sb_desks+4)+bdw,sb_height);
+            XMoveResizeWindow(dis, sb_area, sb_desks, y, desktops[0].w-(sb_desks+4)+bdw,sb_height);
             XGetWindowAttributes(dis, sb_area, &attr);
             total_w = attr.width;
             if(area_sb != 0) {

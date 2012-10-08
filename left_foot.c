@@ -475,11 +475,24 @@ void swap_master() {
 /* **************************** Desktop Management ************************************* */
 
 void change_desktop(const Arg arg) {
-    if(arg.i >= DESKTOPS) return;
-    if(arg.i == current_desktop) return;
+    if(arg.i >= DESKTOPS || arg.i == current_desktop) return;
     client *c;
 
     int next_view = desktops[arg.i].screen;
+    if(next_view != desktops[current_desktop].screen) {
+        // Find cursor position on current monitor, adapt it to next monitor
+        Window dummy;
+        int cx=0, cy=0, dx, dy, rx, ry;
+        unsigned int mask;
+        XQueryPointer(dis, root, &dummy, &dummy, &rx, &ry, &cx, &cy, &mask);
+        dx = cx - desktops[current_desktop].x + desktops[arg.i].x;
+        if(dx > (desktops[arg.i].x+desktops[arg.i].w))
+            dx = (desktops[arg.i].x+desktops[arg.i].w)-10;
+        dy = cy - desktops[current_desktop].y + desktops[arg.i].y;
+        if(dy > (desktops[arg.i].y+desktops[arg.i].h))
+            dy = (desktops[arg.i].y+desktops[arg.i].h)-10;
+        XWarpPointer(dis, None, root, 0, 0, 0, 0, dx, dy);
+    }
 
     // Save current "properties"
     save_desktop(current_desktop);
@@ -514,7 +527,6 @@ void change_desktop(const Arg arg) {
     view[next_view].cd = current_desktop;
     tile();
     update_current();
-    XWarpPointer(dis, None, root, 0, 0, 0, 0, desktops[current_desktop].x+(desktops[current_desktop].w/2), desktops[current_desktop].h/2);
     warp_pointer();
     if(STATUS_BAR == 0) update_bar();
 }
@@ -729,8 +741,11 @@ void update_current() {
     for(i=0;i<num_screens;++i) {
         if(view[i].cd != current_desktop) {
             select_desktop(view[i].cd);
-            for(c=head;c;c=c->next)
-                XSetWindowBorder(dis,c->win,theme[1].wincolor);
+            if(head != NULL) {
+                XSetWindowBorder(dis,current->win,theme[1].wincolor);
+                if(clicktofocus == 0)
+                    XGrabButton(dis, AnyButton, AnyModifier, current->win, True, ButtonPressMask|ButtonReleaseMask, GrabModeAsync, GrabModeAsync, None, None);
+            }
         }
     }
     select_desktop(tmp);
@@ -1071,14 +1086,16 @@ void buttonpress(XEvent *e) {
             return;
         }
     // change focus with LMB
-    if(clicktofocus == 0 && ev->window != current->win && ev->button == Button1)
-        for(i=0;i<num_screens;++i) {
-            select_desktop(view[i].cd);
+    unsigned int cds = desktops[cd].screen;
+    if(clicktofocus == 0 && ev->button == Button1)
+        for(i=cds;i<cds+num_screens;++i) {
+            select_desktop(view[i%num_screens].cd);
             for(c=head;c;c=c->next) {
                 if(ev->window == c->win) {
                     current = c;
                     update_current();
                     XSendEvent(dis, PointerWindow, False, 0xfff, e);
+                    update_bar();
                     XFlush(dis);
                     return;
                 }
@@ -1339,6 +1356,9 @@ void setup() {
     set_defaults();
     read_rcfile();
 
+    // Master size
+    master_size = (mode == 2) ? (sh*msize)/100 : (sw*msize)/100;
+
     // Set up all desktop
     init_desks();
 
@@ -1355,9 +1375,6 @@ void setup() {
 
     // For exiting
     bool_quit = 0;
-
-    // Master size
-    master_size = (mode == 2) ? (sh*msize)/100 : (sw*msize)/100;
 
     // Select first dekstop by default
     select_desktop(0);

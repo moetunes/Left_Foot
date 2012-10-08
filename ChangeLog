@@ -1,9 +1,13 @@
+8/10/12
+  Window Manager functions working predictably
+
 7/10/12
   started multi monitor support.
   Goals are :
       Support for Randr with Xinerama as a fallback
       Automatic detection for adding monitors
 
+#######***********************#######
 24/9/12
   Fix for existing window/s not being unmapped in
     fullscreen mode when new window added

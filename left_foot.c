@@ -486,11 +486,13 @@ void change_desktop(const Arg arg) {
         int cx=0, cy=0, dx, dy, rx, ry;
         unsigned int mask;
         XQueryPointer(dis, root, &dummy, &dummy, &rx, &ry, &cx, &cy, &mask);
-        dx = cx - desktops[current_desktop].x + desktops[arg.i].x;
-        if(dx > (desktops[arg.i].x+desktops[arg.i].w))
+        if(cx > desktops[arg.i].x && cx < (desktops[arg.i].x+desktops[arg.i].w)) dx = cx;
+        else dx = cx - desktops[current_desktop].x + desktops[arg.i].x;
+        if(dx > (desktops[arg.i].x+desktops[arg.i].w-10))
             dx = (desktops[arg.i].x+desktops[arg.i].w)-10;
-        dy = cy - desktops[current_desktop].y + desktops[arg.i].y;
-        if(dy > (desktops[arg.i].y+desktops[arg.i].h))
+        if(cy > desktops[arg.i].y && cx < (desktops[arg.i].y+desktops[arg.i].h)) dx = cx;
+        else dy = cy - desktops[current_desktop].y + desktops[arg.i].y;
+        if(dy > (desktops[arg.i].y+desktops[arg.i].h-10))
             dy = (desktops[arg.i].y+desktops[arg.i].h)-10;
         XWarpPointer(dis, None, root, 0, 0, 0, 0, dx, dy);
     }
@@ -1297,7 +1299,7 @@ void init_desks() {
             desktops[j].x = info[i].x_org + last_width;
             desktops[j].y = info[i].y_org;
             desktops[j].w = info[i].width - BORDER_WIDTH;
-            if(j == 0 && STATUS_BAR == 0 && show_bar == 0) {
+            if(i == 0 && STATUS_BAR == 0 && show_bar == 0) {
                 desktops[j].h = info[i].height - (sb_height+4+bdw);
                 desktops[j].showbar = show_bar;
             } else {

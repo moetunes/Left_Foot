@@ -58,6 +58,7 @@ void status_bar() {
 void toggle_bar() {
     unsigned int i;
 
+    if(desktops[current_desktop].screen != 0) return;
     if(STATUS_BAR == 0) {
         if(has_bar == 0) {
             show_bar = 1;

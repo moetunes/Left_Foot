@@ -1297,16 +1297,18 @@ void init_desks() {
             desktops[j].x = info[i].x_org + last_width;
             desktops[j].y = info[i].y_org;
             desktops[j].w = info[i].width - BORDER_WIDTH;
-            if(j == 0 && STATUS_BAR == 0 && show_bar == 0)
+            if(j == 0 && STATUS_BAR == 0 && show_bar == 0) {
                 desktops[j].h = info[i].height - (sb_height+4+bdw);
-            else
+                desktops[j].showbar = show_bar;
+            } else {
                 desktops[j].h = info[i].height - bdw;
+                desktops[j].showbar = 1;
+            }
             //printf(" x=%d - y=%d - w=%d - h=%d \n", desktops[j].x, desktops[j].y, desktops[j].w, desktops[j].h);
             desktops[j].master_size = (mode == 2) ? (desktops[j].h*msize)/100 : (desktops[j].w*msize)/100;
             desktops[j].nmaster = 0;
             desktops[j].mode = mode;
             desktops[j].growth = 0;
-            desktops[j].showbar = show_bar;
             desktops[j].numwins = 0;
             desktops[j].head = NULL;
             desktops[j].current = NULL;

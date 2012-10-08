@@ -625,8 +625,6 @@ void tile() {
     int ht = 0, y = 0, n = 0;
     int scrx = desktops[current_desktop].x;
     int scry = desktops[current_desktop].y;
-    sw = desktops[current_desktop].w;
-    sh = desktops[current_desktop].h;
 
     // For a top bar
     y = (STATUS_BAR == 0 && topbar == 0 && show_bar == 0) ? sb_height+4 : 0; ypos = y;
@@ -1299,7 +1297,7 @@ void init_desks() {
             desktops[j].x = info[i].x_org + last_width;
             desktops[j].y = info[i].y_org;
             desktops[j].w = info[i].width - BORDER_WIDTH;
-            if(STATUS_BAR == 0 && show_bar == 0)
+            if(j == 0 && STATUS_BAR == 0 && show_bar == 0)
                 desktops[j].h = info[i].height - (sb_height+4+bdw);
             else
                 desktops[j].h = info[i].height - bdw;

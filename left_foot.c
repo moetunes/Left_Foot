@@ -1039,8 +1039,6 @@ void enternotify(XEvent *e) {
 }
 
 void leavenotify(XEvent *e) {
-    if(followmouse != 0) return;
-
     int i;
     XCrossingEvent *ev = &e->xcrossing;
     if(ev->window == sb_area) {

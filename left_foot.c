@@ -480,18 +480,16 @@ void change_desktop(const Arg arg) {
     client *c;
 
     int next_view = desktops[arg.i].screen;
-    if(next_view != desktops[current_desktop].screen) {
+    if(next_view != desktops[current_desktop].screen && dowarp == 0) {
         // Find cursor position on current monitor, adapt it to next monitor
         Window dummy;
         int cx=0, cy=0, dx, dy, rx, ry;
         unsigned int mask;
         XQueryPointer(dis, root, &dummy, &dummy, &rx, &ry, &cx, &cy, &mask);
-        if(cx > desktops[arg.i].x && cx < (desktops[arg.i].x+desktops[arg.i].w)) dx = cx;
-        else dx = cx - desktops[current_desktop].x + desktops[arg.i].x;
+        dx = cx - desktops[current_desktop].x + desktops[arg.i].x;
         if(dx > (desktops[arg.i].x+desktops[arg.i].w-10))
             dx = (desktops[arg.i].x+desktops[arg.i].w)-10;
-        if(cy > desktops[arg.i].y && cx < (desktops[arg.i].y+desktops[arg.i].h)) dx = cx;
-        else dy = cy - desktops[current_desktop].y + desktops[arg.i].y;
+        dy = cy - desktops[current_desktop].y + desktops[arg.i].y;
         if(dy > (desktops[arg.i].y+desktops[arg.i].h-10))
             dy = (desktops[arg.i].y+desktops[arg.i].h)-10;
         XWarpPointer(dis, None, root, 0, 0, 0, 0, dx, dy);
@@ -1027,19 +1025,17 @@ void destroynotify(XEvent *e) {
 }
 
 void enternotify(XEvent *e) {
-    if(followmouse != 0) return;
-
     int i;
     XCrossingEvent *ev = &e->xcrossing;
+    if(ev->window == sb_area) {
+        dowarp = 1;
+        return;
+    }
     for(i=0;i<DESKTOPS;++i)
         if(sb_bar[i].sb_win == ev->window) {
             dowarp = 1;
             return;
         }
-    if(ev->window == sb_area) {
-        dowarp = 1;
-        return;
-    }
 }
 
 void leavenotify(XEvent *e) {
@@ -1047,15 +1043,15 @@ void leavenotify(XEvent *e) {
 
     int i;
     XCrossingEvent *ev = &e->xcrossing;
+    if(ev->window == sb_area) {
+        dowarp = 0;
+        return;
+    }
     for(i=0;i<DESKTOPS;++i)
         if(sb_bar[i].sb_win == ev->window) {
             dowarp = 0;
             return;
         }
-    if(ev->window == sb_area) {
-        dowarp = 0;
-        return;
-    }
 }
 
 void buttonpress(XEvent *e) {
